@@ -1382,22 +1382,35 @@ function renderItems(tab) {
                 }
             }
         } else if (tab === 'departments' && departments[item]) {
-            const sched = departments[item].schedule;
-            for (let day in sched) {
-                for (let hour in sched[day]) {
-                    if (sched[day][hour] && sched[day][hour].length > 0) {
-                        count++;
+    // Pronađi ime odeljenjskog starešine (iz ćelija sa "ч")
+    const sched = departments[item].schedule;
+    let homeroomTeacher = null;
+    
+    for (let day in sched) {
+        for (let hour in sched[day]) {
+            const cell = sched[day][hour];
+            if (cell && cell.length > 0) {
+                for (let entry of cell) {
+                    if (entry.isCOS === true) {
+                        homeroomTeacher = entry.teacher;
+                        break;
                     }
                 }
             }
+            if (homeroomTeacher) break;
         }
-        
-        if (count > 0) {
-            const badge = document.createElement('span');
-            badge.className = 'count-badge';
-            badge.textContent = count;
-            btn.appendChild(badge);
-        }
+        if (homeroomTeacher) break;
+    }
+    
+    if (homeroomTeacher) {
+        const badge = document.createElement('span');
+        badge.className = 'count-badge';
+        badge.textContent = homeroomTeacher;
+        badge.style.fontSize = '11px';
+        badge.style.fontWeight = '400';
+        btn.appendChild(badge);
+    }
+}
         
         btn.onclick = () => {
             document.querySelectorAll('.item-btn').forEach(b => b.classList.remove('active'));
