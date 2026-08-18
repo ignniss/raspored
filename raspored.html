@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Распоред часова</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background:
+        radial-gradient(circle at top left, #4f46e5 0%, transparent 35%),
+        radial-gradient(circle at bottom right, #7c3aed 0%, transparent 35%),
+        #0f172a;
+    color: white;
+    min-height: 100vh;
+}
+
+.app {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 100vh;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* SIDEBAR */
+.sidebar {
+    background: rgba(255,255,255,.06);
+    backdrop-filter: blur(25px);
+    border-right: 1px solid rgba(255,255,255,.08);
+    padding: 24px 20px;
+    overflow: hidden;
+    height: 100vh;
+    max-height: 100vh;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.logo span {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    padding: 2px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    background: rgba(255,255,255,.05);
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    box-shadow: 0 4px 15px rgba(99,102,241,.3);
+}
+
+.tab-btn:hover:not(.active) {
+    background: rgba(255,255,255,.08);
+}
+
+.ov-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: rgba(255,255,255,.05);
+    color: #94a3b8;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.3s;
+    margin-bottom: 16px;
+}
+
+.ov-btn:hover:not(.active) {
+    background: rgba(255,255,255,.1);
+}
+
+.ov-btn.active {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    box-shadow: 0 4px 15px rgba(99,102,241,.3);
+}
+
+.search {
+    margin-bottom: 16px;
+}
+
+.search input {
+    width: 100%;
+    padding: 12px 14px;
+    border: none;
+    outline: none;
+    border-radius: 12px;
+    background: rgba(255,255,255,.08);
+    color: white;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+}
+
+.search input::placeholder {
+    color: #94a3b8;
+}
+
+.search input:focus {
+    background: rgba(255,255,255,.12);
+}
+
+.items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.item-btn {
+    background: rgba(255,255,255,.05);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: white;
+    cursor: pointer;
+    text-align: left;
+    transition: 0.25s;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    word-break: break-word;
+}
+
+.item-btn:hover {
+    transform: translateX(4px);
+    background: rgba(255,255,255,.12);
+}
+
+.item-btn.active {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    box-shadow: 0 4px 20px rgba(99,102,241,.3);
+}
+
+.count-badge {
+    display: inline-block;
+    background: rgba(255,255,255,.1);
+    padding: 0 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    margin-left: 6px;
+}
+
+.shift-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 12px;
+    margin-left: 6px;
+    background: rgba(255,255,255,.1);
+    color: #a5b4fc;
+}
+
+/* Hamburger menu - desktop sakriven */
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: 0.3s;
+}
+
+.hamburger:hover {
+    background: rgba(255,255,255,.1);
+}
+
+/* CONTENT */
+.content {
+    overflow-y: auto;
+    padding: 30px 40px 30px 30px;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.title {
+    margin-bottom: 24px;
+}
+
+.title h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.title .subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.title .selected-info {
+    color: #a5b4fc;
+    font-size: 13px;
+    display: block;
+    margin-top: 6px;
+}
+
+.title .subtitle strong {
+    color: #3b87fa;
+    font-size: 1rem;
+}
+
+/* Tabela rasporeda */
+.schedule-wrapper {
+    overflow-x: auto;
+    background: rgba(255,255,255,.06);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    padding: 4px;
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    min-width: 600px;
+}
+
+.schedule-table th {
+    padding: 14px 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: #a5b4fc;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.03);
+}
+
+.schedule-table td {
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    vertical-align: middle;
+    min-height: 50px;
+    transition: all 0.3s ease;
+}
+
+.schedule-table .hour-label {
+    font-weight: 600;
+    color: #94a3b8;
+    font-size: 12px;
+    width: 60px;
+    text-align: center;
+}
+
+.schedule-table .cell-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.schedule-table .cell-content .main {
+    font-weight: 500;
+}
+
+.schedule-table .cell-content .sub {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.schedule-table .cell-content .shift-label {
+    font-size: 9px;
+    color: #94a3b8;
+    font-weight: 500;
+    background: rgba(255,255,255,.08);
+    padding: 0 6px;
+    border-radius: 8px;
+    margin-left: 2px;
+}
+
+.schedule-table .cell-content .subject-letter {
+    font-size: 10px;
+    color: #a5b4fc;
+    font-weight: 600;
+    margin-right: 2px;
+}
+
+.schedule-table .empty-cell {
+    color: #334155;
+    font-size: 12px;
+}
+
+/* Aktivni čas - pulsiranje (samo pozadina, bez promene boje teksta) */
+@keyframes pulse-active {
+    0% { 
+        background-color: rgba(234, 255, 0, 0.05);
+        transform: scale(1);
+    }
+    50% { 
+        background-color: rgba(234, 255, 0, 0.15);
+        transform: scale(1.02);
+    }
+    100% { 
+        background-color: rgba(234, 255, 0, 0.05);
+        transform: scale(1);
+    }
+}
+
+.schedule-table .active-hour {
+    animation: pulse-active 2s ease-in-out infinite;
+    border-radius: 8px;
+}
+
+/* Raspored za odeljenje - poseban stil */
+.schedule-table.departments td {
+    padding: 10px 8px;
+}
+
+.schedule-table.departments .cell-content .main {
+    font-size: 13px;
+}
+
+.schedule-table.departments .cell-content .sub {
+    font-size: 10px;
+}
+
+/* Empty state */
+.empty {
+    height: 50vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.empty h2 {
+    font-size: 20px;
+    margin-bottom: 6px;
+    color: white;
+}
+
+.empty p {
+    font-size: 14px;
+}
+
+.error {
+    display: none;
+    background: #7f1d1d;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #94a3b8;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 20px;
+}
+
+/* RESPONSIVE - Hamburger se pojavljuje tek na 768px (tablet) */
+@media (max-width: 1024px) {
+    .app {
+        max-width: 100%;
+    }
+    .content {
+        max-width: 100%;
+        padding: 25px 30px 25px 20px;
+    }
+    .schedule-table {
+        font-size: 13px;
+        min-width: 500px;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        background: #0f172a;
+        overflow: auto;
+    }
+    
+    .app {
+        display: block;
+        min-height: 100vh;
+        background: #0f172a;
+    }
+    
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -300px;
+        width: 280px;
+        max-height: 100vh;
+        height: 100vh;
+        border: none;
+        border-right: 1px solid rgba(255,255,255,.08);
+        padding: 20px 16px;
+        background: rgba(15,23,42,.98);
+        backdrop-filter: blur(25px);
+        z-index: 1000;
+        transition: left 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .sidebar.open {
+        left: 0;
+    }
+    
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,.5);
+        z-index: 999;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+    
+    .header-mobile {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        background: rgba(255,255,255,.06);
+        backdrop-filter: blur(25px);
+        border-bottom: 1px solid rgba(255,255,255,.08);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+    
+    .hamburger {
+        display: block;
+        font-size: 28px;
+        padding: 4px 12px;
+    }
+    
+    .header-mobile .logo-text {
+        font-size: 20px;
+        font-weight: 700;
+    }
+    
+    .sidebar .logo {
+        display: none;
+    }
+    
+    .sidebar .logo-mobile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        padding-top: 4px;
+    }
+    
+    .sidebar .logo-mobile span {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        padding: 2px 10px;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .items-list {
+        flex: 1;
+        min-height: 0;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        gap: 4px;
+        overflow-y: auto;
+    }
+    
+    .item-btn {
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+    
+    .content {
+        padding: 0;
+        max-width: 100%;
+        background: #0f172a;
+    }
+    
+    .title {
+        padding: 20px 20px 0;
+    }
+    
+    .title h1 {
+        font-size: 24px;
+    }
+    
+    .schedule-wrapper {
+        padding: 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        background: rgba(255,255,255,.04);
+    }
+    
+    .schedule-table {
+        font-size: 12px;
+        min-width: 400px;
+    }
+    
+    .schedule-table th {
+        padding: 10px 8px;
+        font-size: 11px;
+    }
+    
+    .schedule-table td {
+        padding: 8px 6px;
+    }
+    
+    .schedule-table .hour-label {
+        width: 40px;
+        font-size: 11px;
+    }
+    
+    .schedule-table .cell-content .sub {
+        font-size: 9px;
+    }
+    
+    .empty {
+        height: 30vh;
+        padding: 20px;
+    }
+    
+    .header-mobile .logo-desktop {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar {
+        width: 100%;
+        left: -100%;
+        padding: 16px;
+    }
+    
+    .sidebar.open {
+        left: 0;
+    }
+    
+    .header-mobile {
+        padding: 12px 16px;
+    }
+    
+    .header-mobile .logo-text {
+        font-size: 18px;
+    }
+    
+    .hamburger {
+        font-size: 24px;
+        padding: 4px 8px;
+    }
+    
+    .title {
+        padding: 16px 16px 0;
+    }
+    
+    .title h1 {
+        font-size: 20px;
+    }
+    
+    .title .subtitle {
+        font-size: 13px;
+    }
+    
+    .schedule-table {
+        font-size: 11px;
+        min-width: 320px;
+    }
+    
+    .schedule-table th {
+        padding: 8px 4px;
+        font-size: 10px;
+    }
+    
+    .schedule-table td {
+        padding: 6px 4px;
+    }
+    
+    .schedule-table .hour-label {
+        width: 30px;
+        font-size: 10px;
+    }
+    
+    .schedule-table .cell-content .main {
+        font-size: 11px;
+    }
+    
+    .schedule-table .cell-content .sub {
+        font-size: 8px;
+    }
+    
+    .empty h2 {
+        font-size: 18px;
+    }
+    
+    .empty p {
+        font-size: 14px;
+    }
+    
+    .item-btn {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    
+    .tab-btn {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+    
+    .search input {
+        font-size: 15px;
+        padding: 10px 12px;
+    }
+}
+
+/* Desktop - sakrij mobilni header */
+@media (min-width: 769px) {
+    .header-mobile {
+        display: none;
+    }
+    
+    .sidebar .logo-mobile {
+        display: none;
+    }
+    
+    .sidebar .logo {
+        display: flex;
+    }
+    
+    .sidebar-overlay {
+        display: none !important;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+    <!-- Mobile Header sa hamburgerom -->
+    <div class="header-mobile">
+        <button class="hamburger" id="hamburgerBtn" aria-label="Отвори мени">☰</button>
+        <span class="logo-text">Распоред часова</span>
+        <span style="width:40px;"></span>
+    </div>
+
+    <!-- Overlay za zatvaranje sidebara -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            Распоред часова
+            <span>v1</span>
+        </div>
+        
+        <div class="logo-mobile">
+            Распоред часова
+            <span>v1</span>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="teachers" onclick="switchTab('teachers')">Наставници</button>
+            <button class="tab-btn" data-tab="departments" onclick="switchTab('departments')">Одељења</button>
+        </div>
+
+        <button class="ov-btn" id="ovTabBtn" onclick="showOpenDoorSchedule()">Распоред отворених врата</button>
+
+       <div class="search">
+    <input type="text" id="searchInput" placeholder="🔍 Претражите...">
+</div>
+
+        <div class="items-list" id="itemsContainer"></div>
+    </aside>
+
+    <main class="content" id="content">
+        <div class="error" id="errorBox"></div>
+
+        <div class="title">
+            <h1 id="pageTitle">Распоред часова</h1>
+            <p class="subtitle" id="pageSubtitle">Учитавање података...</p>
+            <span class="selected-info" id="selectedInfo"></span>
+        </div>
+
+        <div id="results">
+            <div class="empty">
+                <h2>Учитавање распореда</h2>
+                <p>Молимо сачекајте док се подаци учитају...</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+// ========================================================================
+// 1. DEFINICIJA SATNICE
+// ========================================================================
+
+const HOURS_TIME = {
+    // Prepodnevna smena
+    morning: {
+        1: { start: '08:00', end: '08:45' },
+        2: { start: '08:50', end: '09:35' },
+        3: { start: '10:00', end: '10:45' },
+        4: { start: '10:50', end: '11:35' },
+        5: { start: '11:40', end: '12:25' },
+        6: { start: '12:30', end: '13:15' },
+        7: { start: '13:15', end: '14:00' }
+    },
+    // Popodnevna smena
+    afternoon: {
+        1: { start: '14:00', end: '14:45' },
+        2: { start: '14:50', end: '15:35' },
+        3: { start: '16:00', end: '16:45' },
+        4: { start: '16:50', end: '17:35' },
+        5: { start: '17:40', end: '18:25' },
+        6: { start: '18:30', end: '19:15' },
+        7: { start: '19:15', end: '20:00' }
+    }
+};
+
+// ========================================================================
+// 2. FUNKCIJE ZA ODREDJIVANJE AKTIVNE SMENE
+// ========================================================================
+
+// Početni datum - 31. avgust 2026. (B smena prepodne)
+const START_DATE = new Date(2026, 7, 31); // 31. avgust 2026.
+
+// Odredi koja je smena prepodne u tekućoj nedelji
+function getCurrentMorningShift() {
+    const now = new Date();
+    const diffDays = Math.floor((now - START_DATE) / (1000 * 60 * 60 * 24));
+    const weekNumber = Math.floor(diffDays / 7);
+    
+    // Parne nedelje -> B smena prepodne, neparne -> A smena prepodne
+    if (weekNumber % 2 === 0) {
+        return 'B'; // B smena prepodne
+    } else {
+        return 'A'; // A smena prepodne
+    }
+}
+
+// Proveri da li je trenutno prepodne (pre 14h) ili popodne
+function isMorning() {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const totalMinutes = hours * 60 + minutes;
+    // 14:00 = 840 minuta
+    return totalMinutes < 840;
+}
+
+// Dobij trenutnu aktivnu smenu (A ili B)
+function getCurrentActiveShift() {
+    const morningShift = getCurrentMorningShift();
+    if (isMorning()) {
+        return morningShift; // A ili B (prepodne)
+    } else {
+        // Popodne je suprotna smena
+        return morningShift === 'A' ? 'B' : 'A';
+    }
+}
+
+// Dobij trenutni aktivni čas (broj 1-7) ili null ako nijedan
+function getCurrentHour() {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentMinutes = hours * 60 + minutes;
+    
+    const isMorningTime = isMorning();
+    const shift = isMorningTime ? 'morning' : 'afternoon';
+    const schedule = HOURS_TIME[shift];
+    
+    for (let h = 1; h <= 7; h++) {
+        if (!schedule[h]) continue;
+        const start = schedule[h].start.split(':');
+        const end = schedule[h].end.split(':');
+        const startMinutes = parseInt(start[0]) * 60 + parseInt(start[1]);
+        const endMinutes = parseInt(end[0]) * 60 + parseInt(end[1]);
+        
+        if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+            return h;
+        }
+    }
+    return null; // Nije ni jedan čas
+}
+
+// Proveri da li je danas radni dan (ponedeljak-petak)
+function isSchoolDay() {
+    const day = new Date().getDay();
+    return day >= 1 && day <= 5;
+}
+
+// Proveri da li je dati čas trenutno aktivan za datu smenu
+function isHourActive(hour, shiftName) {
+    if (!isSchoolDay()) return false;
+    
+    const currentHour = getCurrentHour();
+    if (currentHour === null) return false;
+    if (hour !== currentHour) return false;
+    
+    // Proveri smenu
+    if (shiftName) {
+        const activeShift = getCurrentActiveShift();
+        return activeShift === shiftName;
+    }
+    
+    return true;
+}
+
+// ========================================================================
+// 3. GLOBAL STATE I PARSIRANJE
+// ========================================================================
+
+let teachers = {};
+let departments = {};
+let allDepartments = new Set();
+let currentTab = 'teachers';
+let selectedItem = null;
+let allTeachersList = [];
+let openDoorScheduleByShift = {};
+
+// Oznaka za "отворена врата" u ćelijama rasporeda
+const OPEN_DOOR_CODE = 'ОВ';
+const OPEN_DOOR_LABEL = 'Отворена врата';
+
+// Normalizacija oznake smene (podrazumevano 'A' -> ćirilično 'А') samo za grupisanje OV rasporeda
+function normalizeShiftKey(shiftLetter) {
+    return shiftLetter === 'A' ? 'А' : shiftLetter;
+}
+// Dani u nedelji
+const DAYS = ['ПОНЕДЕЉАК', 'УТОРАК', 'СРЕДА', 'ЧЕТВРТАК', 'ПЕТАК'];
+const DAYS_SHORT = ['Пон', 'Уто', 'Сре', 'Чет', 'Пет'];
+
+// Hamburger funkcionalnost
+document.addEventListener('DOMContentLoaded', function() {
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    function toggleSidebar() {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+        document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+    }
+    
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    
+    hamburgerBtn.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', closeSidebar);
+    
+    document.addEventListener('click', function(e) {
+        if (window.innerWidth <= 768) {
+            const itemBtn = e.target.closest('.item-btn');
+            if (itemBtn) {
+                closeSidebar();
+            }
+        }
+    });
+    
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            closeSidebar();
+        }
+    });
+});
+
+// Parsiranje složenih oznaka tipa "6/56" -> ["6/5", "6/6"]
+function expandDepartmentCode(code) {
+    if (!code || code.trim() === '') return [];
+    
+    code = code.trim();
+    
+    if (code.includes('/')) {
+        const parts = code.split('/');
+        if (parts.length === 2) {
+            const prefix = parts[0];
+            const suffix = parts[1];
+            
+            if (/^\d+$/.test(suffix) && suffix.length > 1) {
+                const results = [];
+                for (let ch of suffix) {
+                    results.push(`${prefix}/${ch}`);
+                }
+                return results;
+            }
+        }
+    }
+    
+    return [code];
+}
+
+// Izdvajanje čistog naziva odeljenja iz "6/4 ч" -> "6/4"
+function cleanDepartmentName(dept) {
+    if (!dept) return dept;
+    
+    if (dept.includes(' ')) {
+        return dept.split(' ')[0];
+    }
+    
+    if (/[а-яА-Яa-zA-Z]/.test(dept)) {
+        return dept.replace(/[^0-9/]/g, '');
+    }
+    
+    return dept;
+}
+
+// Provera da li odeljenje ima dodatnu oznaku (npr "ч")
+function hasExtraLabel(dept) {
+    if (!dept) return false;
+    return /[а-яА-Яa-zA-Z]/.test(dept);
+}
+
+// Parsiraj tabelu za jedan sheet
+function parseSheetData(data, shiftName) {
+    if (!data || data.length < 2) return null;
+    
+    let shiftLetter = 'A';
+    if (shiftName.includes('Б')) shiftLetter = 'Б';
+    else if (shiftName.includes('А')) shiftLetter = 'А';
+    
+    const result = {
+        teachers: {},
+        departments: {},
+        openDoorByShift: {}
+    };
+    
+    for (let rowIdx = 2; rowIdx < data.length; rowIdx++) {
+        const row = data[rowIdx];
+        if (!row || !row[0]) continue;
+        
+        const subject = String(row[0] || '').trim();
+        const teacher = String(row[1] || '').trim();
+        
+        if (!subject || !teacher) continue;
+        
+        if (!result.teachers[teacher]) {
+            result.teachers[teacher] = {
+                name: teacher,
+                shifts: new Set(),
+                subjects: new Set(),
+                schedule: {}
+            };
+        }
+        result.teachers[teacher].shifts.add(shiftLetter);
+        result.teachers[teacher].subjects.add(subject);
+        
+        for (let d = 0; d < 5; d++) {
+            const dayName = DAYS[d];
+            if (!result.teachers[teacher].schedule[dayName]) {
+                result.teachers[teacher].schedule[dayName] = {};
+            }
+            for (let h = 1; h <= 7; h++) {
+                if (!result.teachers[teacher].schedule[dayName][h]) {
+                    result.teachers[teacher].schedule[dayName][h] = [];
+                }
+            }
+        }
+        
+        for (let d = 0; d < 5; d++) {
+            const dayName = DAYS[d];
+            const startCol = 2 + d * 7;
+            
+            for (let h = 1; h <= 7; h++) {
+                const colIdx = startCol + (h - 1);
+                const cellValue = row[colIdx] || '';
+                const cellStr = String(cellValue).trim();
+                
+                if (cellStr && cellStr !== '') {
+                    const expanded = expandDepartmentCode(cellStr);
+                    
+                    for (let dep of expanded) {
+                        if (dep && dep.trim() !== '') {
+                            const depTrim = dep.trim();
+                            const isOpenDoor = depTrim.toUpperCase() === OPEN_DOOR_CODE;
+                            
+                            const cleanDept = isOpenDoor ? OPEN_DOOR_CODE : cleanDepartmentName(depTrim);
+                            const hasLabel = isOpenDoor ? false : hasExtraLabel(depTrim);
+                            
+                            if (!result.teachers[teacher].schedule[dayName][h]) {
+                                result.teachers[teacher].schedule[dayName][h] = [];
+                            }
+                            
+                            const exists = result.teachers[teacher].schedule[dayName][h].some(
+                                item => item.department === cleanDept && 
+                                       item.shift === shiftLetter && 
+                                       item.subject === subject
+                            );
+                            if (!exists) {
+                                result.teachers[teacher].schedule[dayName][h].push({
+                                    department: cleanDept,
+                                    shift: shiftLetter,
+                                    subject: subject,
+                                    hasLabel: hasLabel
+                                });
+                            }
+                            
+                            // Отворена врата се третирају као посебно "одељење", посебно по сменама,
+                            // и не приказују се у обичној листи одељења - имају сопствену структуру,
+                            // а у распореду се памти само име наставника (без предмета).
+                            if (isOpenDoor) {
+                                const ovShiftKey = normalizeShiftKey(shiftLetter);
+                                
+                                if (!result.openDoorByShift[ovShiftKey]) {
+                                    result.openDoorByShift[ovShiftKey] = { schedule: {} };
+                                }
+                                const ovEntry = result.openDoorByShift[ovShiftKey];
+                                
+                                if (!ovEntry.schedule[dayName]) {
+                                    ovEntry.schedule[dayName] = {};
+                                }
+                                if (!ovEntry.schedule[dayName][h]) {
+                                    ovEntry.schedule[dayName][h] = [];
+                                }
+                                
+                                const existsOV = ovEntry.schedule[dayName][h].some(
+                                    e => e.teacher === teacher
+                                );
+                                if (!existsOV) {
+                                    ovEntry.schedule[dayName][h].push({ teacher: teacher });
+                                }
+                                
+                                continue;
+                            }
+                            
+                            allDepartments.add(cleanDept);
+                            
+                            if (!result.departments[cleanDept]) {
+                                result.departments[cleanDept] = {
+                                    name: cleanDept,
+                                    shift: shiftLetter,
+                                    schedule: {}
+                                };
+                            }
+                            
+                            if (!result.departments[cleanDept].schedule[dayName]) {
+                                result.departments[cleanDept].schedule[dayName] = {};
+                            }
+                            if (!result.departments[cleanDept].schedule[dayName][h]) {
+                                result.departments[cleanDept].schedule[dayName][h] = [];
+                            }
+                            
+                            const existsDept = result.departments[cleanDept].schedule[dayName][h].some(
+                                e => e.subject === subject && e.teacher === teacher
+                            );
+                            if (!existsDept) {
+                                result.departments[cleanDept].schedule[dayName][h].push({ 
+                                    subject: subject,
+                                    teacher: teacher,
+                                    isCOS: hasLabel
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return result;
+}
+
+// Spajanje podataka iz više sheet-ova
+function mergeData(allSheetData) {
+    const mergedTeachers = {};
+    const mergedDepartments = {};
+    const mergedOpenDoorByShift = {};
+    
+    for (let sheetData of allSheetData) {
+        if (!sheetData) continue;
+        
+        for (let teacherName in sheetData.teachers) {
+            if (!mergedTeachers[teacherName]) {
+                mergedTeachers[teacherName] = {
+                    name: teacherName,
+                    shifts: new Set(),
+                    subjects: new Set(),
+                    schedule: {}
+                };
+            }
+            
+            const teacher = sheetData.teachers[teacherName];
+            for (let shift of teacher.shifts) {
+                mergedTeachers[teacherName].shifts.add(shift);
+            }
+            for (let subject of teacher.subjects) {
+                mergedTeachers[teacherName].subjects.add(subject);
+            }
+            
+            for (let day in teacher.schedule) {
+                if (!mergedTeachers[teacherName].schedule[day]) {
+                    mergedTeachers[teacherName].schedule[day] = {};
+                }
+                for (let hour in teacher.schedule[day]) {
+                    if (!mergedTeachers[teacherName].schedule[day][hour]) {
+                        mergedTeachers[teacherName].schedule[day][hour] = [];
+                    }
+                    for (let item of teacher.schedule[day][hour]) {
+                        const exists = mergedTeachers[teacherName].schedule[day][hour].some(
+                            existing => existing.department === item.department && 
+                                       existing.shift === item.shift && 
+                                       existing.subject === item.subject
+                        );
+                        if (!exists) {
+                            mergedTeachers[teacherName].schedule[day][hour].push(item);
+                        }
+                    }
+                }
+            }
+        }
+        
+        for (let deptName in sheetData.departments) {
+            if (!mergedDepartments[deptName]) {
+                mergedDepartments[deptName] = {
+                    name: deptName,
+                    shift: sheetData.departments[deptName].shift,
+                    schedule: {}
+                };
+            }
+            
+            const dept = sheetData.departments[deptName];
+            for (let day in dept.schedule) {
+                if (!mergedDepartments[deptName].schedule[day]) {
+                    mergedDepartments[deptName].schedule[day] = {};
+                }
+                for (let hour in dept.schedule[day]) {
+                    if (!mergedDepartments[deptName].schedule[day][hour]) {
+                        mergedDepartments[deptName].schedule[day][hour] = [];
+                    }
+                    for (let item of dept.schedule[day][hour]) {
+                        const exists = mergedDepartments[deptName].schedule[day][hour].some(
+                            e => e.subject === item.subject && e.teacher === item.teacher
+                        );
+                        if (!exists) {
+                            mergedDepartments[deptName].schedule[day][hour].push({
+                                subject: item.subject,
+                                teacher: item.teacher,
+                                isCOS: item.isCOS || false
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (sheetData.openDoorByShift) {
+            for (let shiftKey in sheetData.openDoorByShift) {
+                if (!mergedOpenDoorByShift[shiftKey]) {
+                    mergedOpenDoorByShift[shiftKey] = { schedule: {} };
+                }
+                const target = mergedOpenDoorByShift[shiftKey];
+                const source = sheetData.openDoorByShift[shiftKey];
+                
+                for (let day in source.schedule) {
+                    if (!target.schedule[day]) {
+                        target.schedule[day] = {};
+                    }
+                    for (let hour in source.schedule[day]) {
+                        if (!target.schedule[day][hour]) {
+                            target.schedule[day][hour] = [];
+                        }
+                        for (let item of source.schedule[day][hour]) {
+                            const exists = target.schedule[day][hour].some(
+                                e => e.teacher === item.teacher
+                            );
+                            if (!exists) {
+                                target.schedule[day][hour].push({ teacher: item.teacher });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    for (let teacherName in mergedTeachers) {
+        mergedTeachers[teacherName].shifts = Array.from(mergedTeachers[teacherName].shifts).sort();
+        mergedTeachers[teacherName].subjects = Array.from(mergedTeachers[teacherName].subjects).sort();
+    }
+    
+    return {
+        teachers: mergedTeachers,
+        departments: mergedDepartments,
+        openDoorByShift: mergedOpenDoorByShift
+    };
+}
+
+// Učitaj Excel fajl
+function loadExcel() {
+    const resultsArea = document.getElementById('results');
+    resultsArea.innerHTML = `
+        <div class="empty">
+            <h2>Учитавање...</h2>
+            <p>Молимо сачекајте док се датотека учита</p>
+        </div>
+    `;
+    
+    fetch('Raspored.xlsx')
+        .then(response => {
+            if (!response.ok) throw new Error('Фајл Raspored.xlsx није пронађен.');
+            return response.arrayBuffer();
+        })
+        .then(data => {
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            const allSheetData = [];
+            
+            for (let sheetName of workbook.SheetNames) {
+                const sheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                
+                if (jsonData && jsonData.length >= 3) {
+                    const parsed = parseSheetData(jsonData, sheetName);
+                    if (parsed) {
+                        allSheetData.push(parsed);
+                    }
+                }
+            }
+            
+            if (allSheetData.length === 0) {
+                throw new Error('Ниједан лист није исправан.');
+            }
+            
+            const merged = mergeData(allSheetData);
+            teachers = merged.teachers;
+            departments = merged.departments;
+            openDoorScheduleByShift = merged.openDoorByShift || {};
+            
+            allTeachersList = Object.keys(teachers).sort();
+            
+            document.getElementById('pageSubtitle').textContent = 
+                `Учитано ${allTeachersList.length} наставника и ${allDepartments.size} одељења из ${allSheetData.length} смене`;
+            document.getElementById('selectedInfo').textContent = '';
+            
+            renderItems(currentTab);
+            showEmptyState();
+            
+            document.getElementById('errorBox').style.display = 'none';
+        })
+        .catch(err => {
+            showError(err.message || 'Грешка при учитавању фајла.');
+        });
+}
+
+// Renderuj listu
+function renderItems(tab) {
+    const container = document.getElementById('itemsContainer');
+    const searchText = document.getElementById('searchInput').value.toLowerCase();
+    
+    let items = [];
+    if (tab === 'teachers') {
+        items = allTeachersList.slice().sort((a, b) => a.localeCompare(b, 'sr'));
+    } else {
+        items = Array.from(allDepartments).slice().sort((a, b) => a.localeCompare(b, 'sr'));
+    }
+    
+    if (searchText) {
+        items = items.filter(item => item.toLowerCase().includes(searchText));
+    }
+    
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div style="color:#64748b;padding:20px;text-align:center;font-size:13px;">
+                ${tab === 'teachers' ? 'Нема наставника' : 'Нема одељења'} који одговарају претрази
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    items.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = 'item-btn';
+        if (selectedItem === item && currentTab === tab) {
+            btn.classList.add('active');
+        }
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = item;
+        btn.appendChild(nameSpan);
+        
+        if (tab === 'teachers' && teachers[item]) {
+            const shifts = teachers[item].shifts || [];
+            if (shifts.length > 0) {
+                const badge = document.createElement('span');
+                badge.className = 'shift-badge';
+                badge.textContent = shifts.join('');
+                btn.appendChild(badge);
+            }
+        }
+        
+        // Broj časova - za nastavnike računamo jedinstvene časove (ne po odeljenjima)
+        let count = 0;
+        if (tab === 'teachers' && teachers[item]) {
+            const sched = teachers[item].schedule;
+            // Brojimo samo popunjene ćelije (svaka ćelija = jedan čas), izuzev otvorenih vrata
+            for (let day in sched) {
+                for (let hour in sched[day]) {
+                    const cell = sched[day][hour];
+                    if (cell && cell.length > 0 && cell.some(it => it.department !== OPEN_DOOR_CODE)) {
+                        count++; // Svaka popunjena ćelija (osim OV) je jedan čas
+                    }
+                }
+            }
+        } else if (tab === 'departments' && departments[item]) {
+            const sched = departments[item].schedule;
+            for (let day in sched) {
+                for (let hour in sched[day]) {
+                    if (sched[day][hour] && sched[day][hour].length > 0) {
+                        count++;
+                    }
+                }
+            }
+        }
+        
+        if (count > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'count-badge';
+            badge.textContent = count;
+            btn.appendChild(badge);
+        }
+        
+        btn.onclick = () => {
+            document.querySelectorAll('.item-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            selectedItem = item;
+            currentTab = tab;
+            
+            document.getElementById('selectedInfo').textContent = '';
+            
+            if (tab === 'teachers') {
+                showTeacherSchedule(item);
+            } else {
+                showDepartmentSchedule(item);
+            }
+            
+            if (window.innerWidth <= 900) {
+                const titleSection = document.getElementById('content');
+                titleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        };
+        
+        container.appendChild(btn);
+    });
+}
+
+// ========================================================================
+// 4. PRIKAZ RASPOREDA
+// ========================================================================
+
+// Prikaži raspored za nastavnika
+function showTeacherSchedule(teacherName) {
+    const data = teachers[teacherName];
+    if (!data) {
+        showEmptyState('Нема података за овог наставника.');
+        return;
+    }
+    
+    const resultsArea = document.getElementById('results');
+    const title = document.getElementById('pageTitle');
+    title.textContent = teacherName;
+    
+    document.getElementById('selectedInfo').textContent = '';
+    
+    const subjectsList = data.subjects ? data.subjects.join(', ') : '';
+    const shiftInfo = data.shifts ? `(${data.shifts.join('')})` : '';
+    document.getElementById('pageSubtitle').innerHTML = `<strong>${subjectsList}</strong> · распоред часова ${shiftInfo}`;
+    
+    const today = new Date().getDay();
+    const todayName = today >= 1 && today <= 5 ? DAYS[today - 1] : null;
+    
+    let html = `
+        <div class="schedule-wrapper">
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th>Час</th>
+                        ${DAYS_SHORT.map(d => `<th>${d}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    for (let h = 1; h <= 7; h++) {
+        html += `<tr><td class="hour-label">${h}.</td>`;
+        for (let d = 0; d < 5; d++) {
+            const dayName = DAYS[d];
+            const cell = data.schedule[dayName] && data.schedule[dayName][h] ? data.schedule[dayName][h] : [];
+            
+            const isToday = (dayName === todayName && isSchoolDay());
+            
+            if (cell && cell.length > 0) {
+                // Za svaku stavku u ćeliji proveravamo njenu smenu
+                const items = cell.map(item => {
+                    let display = '';
+                    
+                    if (item.hasLabel) {
+                        display += `<span style="color: #eaff00; font-weight: 600;">${item.department}</span>`;
+                    } else if (item.department === OPEN_DOOR_CODE) {
+                        display += `<span class="sub">${OPEN_DOOR_LABEL}</span>`;
+                    } else {
+                        display += item.department;
+                    }
+                    
+                    if (data.subjects && data.subjects.length > 1 && item.department !== OPEN_DOOR_CODE) {
+    // Funkcija za generisanje oznake predmeta
+    function getSubjectShort(subject, allSubjects) {
+        const firstLetter = subject.charAt(0).toUpperCase();
+        
+        // Proveri da li postoji drugi predmet sa istim prvim slovom
+        const hasDuplicate = allSubjects.some(s => 
+            s !== subject && s.charAt(0).toUpperCase() === firstLetter
+        );
+        
+        if (hasDuplicate) {
+            // Ako postoji duplikat, uzmi prva dva slova
+            return subject.substring(0, 2).toUpperCase();
+        } else {
+            // Ako nema duplikata, uzmi samo prvo slovo
+            return firstLetter;
+        }
+    }
+    
+    const subjectShort = getSubjectShort(item.subject, data.subjects);
+    display += ` <span class="subject-letter">${subjectShort}</span>`;
+}
+                    
+                    if (data.shifts && data.shifts.length === 2) {
+                        display += `<span class="shift-label">${item.shift}</span>`;
+                    }
+                    
+                    return display;
+                }).join(', ');
+                
+                // Proveri da li je BILO KOJA stavka u ćeliji aktivna
+                const hasActive = cell.some(item => {
+                    return isToday && isHourActive(h, item.shift);
+                });
+                
+                const activeClass = hasActive ? 'active-hour' : '';
+                html += `<td class="${activeClass}"><div class="cell-content"><span class="main">${items}</span></div></td>`;
+            } else {
+                html += `<td><span class="empty-cell">-</span></td>`;
+            }
+        }
+        html += `</tr>`;
+    }
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    resultsArea.innerHTML = html;
+}
+
+// Prikaži raspored za odeljenje - grupiše iste predmete u istoj ćeliji
+function showDepartmentSchedule(deptName) {
+    const data = departments[deptName];
+    if (!data) {
+        showEmptyState('Нема података за ово одељење.');
+        return;
+    }
+    
+    const resultsArea = document.getElementById('results');
+    const title = document.getElementById('pageTitle');
+    title.textContent = `Одељење ${deptName}`;
+    
+    document.getElementById('selectedInfo').textContent = '';
+    document.getElementById('pageSubtitle').textContent = `Распоред часова (${data.shift || ''} смена)`;
+    
+    const departmentShift = data.shift || 'A';
+    const today = new Date().getDay();
+    const todayName = today >= 1 && today <= 5 ? DAYS[today - 1] : null;
+    
+    let html = `
+        <div class="schedule-wrapper">
+            <table class="schedule-table departments">
+                <thead>
+                    <tr>
+                        <th>Час</th>
+                        ${DAYS_SHORT.map(d => `<th>${d}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    for (let h = 1; h <= 7; h++) {
+        html += `<tr><td class="hour-label">${h}.</td>`;
+        for (let d = 0; d < 5; d++) {
+            const dayName = DAYS[d];
+            const cell = data.schedule[dayName] && data.schedule[dayName][h] ? data.schedule[dayName][h] : [];
+            
+            const isToday = (dayName === todayName && isSchoolDay());
+            const isActive = isToday && isHourActive(h, departmentShift);
+            
+            if (cell && cell.length > 0) {
+                // Grupiši po predmetu (subject)
+                const grouped = {};
+                cell.forEach(item => {
+                    let key = item.subject;
+                    if (item.isCOS === true) {
+                        key = 'ЧОС';
+                    }
+                    if (!grouped[key]) {
+                        grouped[key] = [];
+                    }
+                    grouped[key].push(item.teacher);
+                });
+                
+                // Napravi HTML za grupisane stavke
+                const itemsHtml = Object.keys(grouped).map(subject => {
+                    const teachers = grouped[subject];
+                    // Ako ima više nastavnika za isti predmet, prikaži jedan predmet i sve nastavnike ispod
+                    if (teachers.length > 1) {
+                        const teachersHtml = teachers.map(t => 
+                            `<span class="sub">${t}</span>`
+                        ).join('');
+                        return `<span class="main">${subject}</span>${teachersHtml}`;
+                    } else {
+                        return `<span class="main">${subject}</span><span class="sub">${teachers[0]}</span>`;
+                    }
+                }).join('');
+                
+                const activeClass = isActive ? 'active-hour' : '';
+                html += `<td class="${activeClass}"><div class="cell-content">${itemsHtml}</div></td>`;
+            } else {
+                html += `<td><span class="empty-cell">-</span></td>`;
+            }
+        }
+        html += `</tr>`;
+    }
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    resultsArea.innerHTML = html;
+}
+
+// Prikaži listu smena (А/Б) u bočnom meniju za otvorena vrata
+function showOpenDoorSchedule() {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('ovTabBtn').classList.add('active');
+    
+    currentTab = 'opendoor';
+    selectedItem = null;
+    
+    document.getElementById('searchInput').value = '';
+    
+    const container = document.getElementById('itemsContainer');
+    container.innerHTML = '';
+    
+    ['А', 'Б'].forEach(shiftKey => {
+        const btn = document.createElement('button');
+        btn.className = 'item-btn';
+        btn.textContent = `${shiftKey} смена`;
+        
+        btn.onclick = () => {
+            document.querySelectorAll('.item-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            selectedItem = shiftKey;
+            showOpenDoorForShift(shiftKey);
+            
+            if (window.innerWidth <= 900) {
+                const titleSection = document.getElementById('content');
+                titleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        };
+        
+        container.appendChild(btn);
+    });
+    
+    document.getElementById('pageTitle').textContent = 'Распоред отворених врата';
+    document.getElementById('pageSubtitle').textContent = 'Изаберите смену';
+    document.getElementById('selectedInfo').textContent = '';
+    
+    document.getElementById('results').innerHTML = `
+        <div class="empty">
+            <h2>Изаберите смену</h2>
+            <p>за приказ распореда отворених врата</p>
+        </div>
+    `;
+}
+
+// Prikaži raspored otvorenih vrata za odabranu smenu (samo imena nastavnika, bez predmeta)
+function showOpenDoorForShift(shiftKey) {
+    document.getElementById('pageTitle').textContent = `Распоред отворених врата — ${shiftKey} смена`;
+    document.getElementById('pageSubtitle').textContent = '';
+    document.getElementById('selectedInfo').textContent = '';
+    
+    const resultsArea = document.getElementById('results');
+    const data = openDoorScheduleByShift[shiftKey];
+    
+    if (!data || Object.keys(data.schedule).length === 0) {
+        resultsArea.innerHTML = `
+            <div class="empty">
+                <h2>Отворена врата — ${shiftKey} смена</h2>
+                <p>Нема података за ову смену.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const today = new Date().getDay();
+    const todayName = today >= 1 && today <= 5 ? DAYS[today - 1] : null;
+    
+    let html = `
+        <div class="schedule-wrapper">
+            <table class="schedule-table departments">
+                <thead>
+                    <tr>
+                        <th>Час</th>
+                        ${DAYS_SHORT.map(d => `<th>${d}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    for (let h = 1; h <= 7; h++) {
+        html += `<tr><td class="hour-label">${h}.</td>`;
+        for (let d = 0; d < 5; d++) {
+            const dayName = DAYS[d];
+            const cell = data.schedule[dayName] && data.schedule[dayName][h] ? data.schedule[dayName][h] : [];
+            
+            const isToday = (dayName === todayName && isSchoolDay());
+            const isActive = isToday && isHourActive(h, shiftKey);
+            
+            if (cell && cell.length > 0) {
+                const names = cell.map(item => `<span class="sub" style="display:block;">${item.teacher}</span>`).join('');
+                const activeClass = isActive ? 'active-hour' : '';
+                html += `<td class="${activeClass}"><div class="cell-content">${names}</div></td>`;
+            } else {
+                html += `<td><span class="empty-cell">-</span></td>`;
+            }
+        }
+        html += `</tr>`;
+    }
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    resultsArea.innerHTML = html;
+}
+
+// Prikaži prazno stanje
+function showEmptyState(message = '') {
+    const resultsArea = document.getElementById('results');
+    resultsArea.innerHTML = `
+        <div class="empty">
+            <h2>${currentTab === 'teachers' ? 'Изаберите наставника' : 'Изаберите одељење'}</h2>
+            <p>${message}</p>
+        </div>
+    `;
+}
+
+// Promena taba
+function switchTab(tab) {
+    currentTab = tab;
+    selectedItem = null;
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    document.getElementById('ovTabBtn').classList.remove('active');
+    
+    document.getElementById('searchInput').value = '';
+    renderItems(tab);
+    
+    document.getElementById('pageTitle').textContent = tab === 'teachers' ? 'Наставници' : 'Одељења';
+    document.getElementById('pageSubtitle').textContent = tab === 'teachers' 
+        ? 'Кликните на наставника за његов распоред' 
+        : 'Кликните на одељење за распоред часова';
+    document.getElementById('selectedInfo').textContent = '';
+    showEmptyState();
+}
+
+// Pretraga
+document.getElementById('searchInput').addEventListener('input', function() {
+    if (currentTab === 'teachers' || currentTab === 'departments') {
+        renderItems(currentTab);
+    }
+});
+
+// Greška
+function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.style.display = 'block';
+    box.textContent = msg;
+    
+    document.getElementById('results').innerHTML = `
+        <div class="empty">
+            <h2>Грешка</h2>
+            <p>${msg}</p>
+        </div>
+    `;
+}
+
+// Inicijalizacija
+window.addEventListener('DOMContentLoaded', function() {
+    currentTab = 'teachers';
+    document.querySelector('.tab-btn[data-tab="teachers"]').classList.add('active');
+    loadExcel();
+});
+</script>
+
+</body>
+</html>
